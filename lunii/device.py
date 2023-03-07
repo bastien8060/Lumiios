@@ -1,9 +1,9 @@
 from uuid import UUID
 
-from Story import Story
-from utils import Decryption, ByteBuffer
+from . import Story
+from .utils import Decryption, ByteBuffer
 
-class Lunii:
+class Device:
     def __init__(self, path):
         self.mountpoint = path
         self.devkey = None

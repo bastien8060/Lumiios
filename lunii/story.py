@@ -1,9 +1,9 @@
 import os
 
-from utils import Decryption, ByteBuffer
-from utils import ImageAsset, AudioAsset
-from utils import ActionNode, StageNode, ControlSettings, Transition
-from utils import StoryMetadata
+from .utils import Decryption, ByteBuffer
+from .utils import ImageAsset, AudioAsset
+from .utils import ActionNode, StageNode, ControlSettings, Transition
+from .utils import StoryMetadata
 
 class Story:
     def __init__(self, path, uuid, keys:tuple):
@@ -12,24 +12,26 @@ class Story:
         self.full_uuid = uuid
         self.uuid = uuid.hex[-8:].upper()
 
-        self.device_key = keys[0]
-        self.lunii_generic_key = keys[1]
+        self.__device_key = keys[0]
+        self.__lunii_generic_key = keys[1]
 
         self.version, self.night_mode, self.authorized = None, False, False
-        self.si, self.ri, self.li = None, None, None     
+        self.__si, self.__ri, self.__li = None, None, None     
 
-        self.ri_path = self.__get_local_filepath('ri')
-        self.si_path = self.__get_local_filepath('si')
-        self.li_path = self.__get_local_filepath('li')
-        self.bt_path = self.__get_local_filepath('bt')
-        self.ni_path = self.__get_local_filepath('ni')
-        self.nm_path = self.__get_local_filepath('nm')
+        self.__ri_path = self.__get_local_filepath('ri')
+        self.__si_path = self.__get_local_filepath('si')
+        self.__li_path = self.__get_local_filepath('li')
+        self.__bt_path = self.__get_local_filepath('bt')
+        self.__ni_path = self.__get_local_filepath('ni')
+        self.__nm_path = self.__get_local_filepath('nm')
 
-        self.rf_path = self.__get_local_filepath('rf/')
-        self.sf_path = self.__get_local_filepath('sf/')
+        self.__rf_path = self.__get_local_filepath('rf/')
+        self.__sf_path = self.__get_local_filepath('sf/')
 
         self.nodes_index_list = []
         self.stage_nodes = {}
+
+        self.cover_sound = None
 
         self.populate()
 
@@ -43,8 +45,14 @@ class Story:
         self.__get_list_node_index()
         self.__get_action_node_index()
 
+        self.__get_cover_sound()
+
+    def __get_cover_sound(self):
+        # reference to AudioAsset of node #0
+        self.cover_sound = self.stage_nodes.get(0,{}).assets.get('audio', None)
+
     def __get_story_metadata(self):
-        with open(self.ni_path, 'rb') as fp_ni:
+        with open(self.__ni_path, 'rb') as fp_ni:
             ni = fp_ni.read(512)
             buffer = ByteBuffer(ni, '<')
             s1 = buffer.get_short()  # read the first short integer
@@ -52,7 +60,7 @@ class Story:
             self.version = s2
 
         # night mode is enabled if the file exists
-        self.night_mode = os.path.exists(self.nm_path)
+        self.night_mode = os.path.exists(self.__nm_path)
 
     def __get_story_title(self):
         storyMetadataClient = StoryMetadata("./misc/titles.json")
@@ -65,7 +73,7 @@ class Story:
         # Song Index
         # The file is organized as a list of 12 Bytes strings
         # first decrypt the file with generic key
-        with Decryption(self.lunii_generic_key, path=self.si_path).decrypted_buffer as fp_si:
+        with Decryption(self.__lunii_generic_key, path=self.__si_path).decrypted_buffer as fp_si:
             loop_again = True
             str_list = []
             while loop_again:
@@ -74,13 +82,13 @@ class Story:
                     str_list.append(char_array.decode('utf-8'))
                 else:
                     loop_again = False
-            self.si = str_list
+            self.__si = str_list
 
     def __get_resources_index(self):
         # Resource Index
         # The file is organized as a list of 12 Bytes strings
         # first decrypt the file with generic key
-        with Decryption(self.lunii_generic_key, path=self.ri_path).decrypted_buffer as fp_ri:
+        with Decryption(self.__lunii_generic_key, path=self.__ri_path).decrypted_buffer as fp_ri:
             loop_again = True
             str_list = []
             while loop_again:
@@ -89,7 +97,7 @@ class Story:
                     str_list.append(char_array.decode('utf-8'))
                 else:
                     loop_again = False
-            self.ri = str_list
+            self.__ri = str_list
 
     def __get_abs_node_idx(self, node_idx):
         if node_idx < 0:
@@ -102,11 +110,11 @@ class Story:
         # List Node Index
         # The file is organized as an array of 4 bytes integers
         # first decrypt the file with generic key
-        fp_li = Decryption(self.lunii_generic_key, path=self.li_path).decrypted_buffer
+        fp_li = Decryption(self.__lunii_generic_key, path=self.__li_path).decrypted_buffer
         bb = ByteBuffer(fp_li.read(), '<')
 
         #count = fp_li_size_bytes / 4
-        count = int(os.path.getsize(self.li_path) / 4)
+        count = int(os.path.getsize(self.__li_path) / 4)
         
         self.nodes_index_list = []
         for i in range(count):
@@ -121,7 +129,7 @@ class Story:
         # use ByteBuffer to read the file
         # open ni as rb
         
-        fp_ni = open(self.ni_path, 'rb')
+        fp_ni = open(self.__ni_path, 'rb')
 
         bb = ByteBuffer(fp_ni.read(), '<')
         
@@ -189,13 +197,13 @@ class Story:
             }
 
             if ri_index != -1:
-                image_path = self.rf_path + self.ri[ri_index].replace("\\", "/")
-                key = self.lunii_generic_key
+                image_path = self.__rf_path + self.__ri[ri_index].replace("\\", "/")
+                key = self.__lunii_generic_key
                 assets['image'] = ImageAsset('image/bmp', image_path, key)
 
             audio = None
             if si_index != -1:
-                audio_path = self.sf_path + self.si[si_index].replace("\\", "/")
+                audio_path = self.__sf_path + self.__si[si_index].replace("\\", "/")
                 assets['audio'] = AudioAsset('audio/mpeg', audio_path)
 
             stage_node = StageNode(
@@ -207,7 +215,7 @@ class Story:
             )
             self.stage_nodes[i] = stage_node
 
-        li_fp = Decryption(self.lunii_generic_key, path=self.li_path).decrypted_buffer
+        li_fp = Decryption(self.__lunii_generic_key, path=self.__li_path).decrypted_buffer
         li_bb = ByteBuffer(li_fp.read(), '<')
 
        
@@ -218,13 +226,13 @@ class Story:
         # It is made by ciphering the 0x40 first bytes for .ri file with device specific key.
 
         try:
-            with open(self.bt_path, 'rb') as fp_bt:
+            with open(self.__bt_path, 'rb') as fp_bt:
                 bt = fp_bt.read()
 
-            with open(self.ri_path, 'rb') as fp_ri:
+            with open(self.__ri_path, 'rb') as fp_ri:
                 ri = fp_ri.read(0x40)
 
-            decryptionClient = Decryption(self.device_key, bytes=bt)
+            decryptionClient = Decryption(self.__device_key, bytes=bt)
             dec = decryptionClient.decrypted
 
             if dec == ri:

@@ -1,12 +1,18 @@
-import xxtea, io, struct
-from typing import Optional, Dict, List, Union
-
-from PIL import Image
-import climage
-import vlc
-
+import io
+import os
 import json
 import time
+import struct
+import requests
+from typing import Dict, List, Optional, Union, Tuple
+
+import vlc
+import xxtea
+import climage
+from PIL import Image
+from appdirs import AppDirs
+
+from pkg_resources import resource_stream
 
 class Decryption:
     def __lunii_tea_rounds(self, buffer):
@@ -200,7 +206,7 @@ class ControlSettings:
 class StageNode:
     def __init__(self,
                  index: int,
-                 assets: Dict[ImageAsset, AudioAsset] = None,
+                 assets: Tuple[ImageAsset, AudioAsset] = None,
                  next_transitions: List[Transition] = None,
                  home_transitions: List[Transition] = None,
                  control_settings: ControlSettings = None
@@ -220,19 +226,49 @@ class ActionNode:
         }
 
 class StoryMetadata:
-    def __init__(self, filename="misc/titles.json"):
+    def __init__(self, filename=None, refresh=False):
         self.filename = filename
+        if refresh:
+            self.__fetch_metadata()
         self.metadata = self.load_titles()
 
+    def __fetch_metadata(self, url: str, lang: str = "fr_FR") -> None:
+        response = requests.get(url).json()
+
+        results = []
+
+        for key in response["response"]:
+            entry = response["response"][key]
+            localized_infos = entry.get("localized_infos", {}).get(lang, {})
+            if not localized_infos:
+                continue
+            else:
+                title = localized_infos.get("title", "")
+            result = {
+                "uuid": entry.get("uuid", ""),
+                "title": title,
+                "keywords": entry.get("keywords", ""),
+                "subtitle": entry.get("subtitle", ""),
+            }
+            results.append(result)
+
+        self.filename = self.filename or os.path.join(
+            AppDirs("Lumiios", "Lumiios").user_data_dir, "titles.json"
+        )
+        with open(self.filename, 'w') as f:
+            json.dump(results, f, indent=4)
+
     def load_titles(self):
-        with open(self.filename, 'r') as f:
-            return json.load(f)
+        self.filename = self.filename or os.path.join(
+            AppDirs("Lumiios", "Lumiios").user_data_dir, "titles.json"
+        )
+        if os.path.exists(self.filename):
+            with open(self.filename, 'r') as f:
+                return json.load(f)
+        return json.load(resource_stream('lumiios', 'data/titles.json'))
 
     def get_metadata(self, uuid):
-
         for story in self.metadata:
             if str(uuid).lower() in story['uuid'].lower():
                 return story
         return {}
-
-
