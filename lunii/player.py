@@ -9,6 +9,14 @@ class StoryPlayer:
         self.playing = True
         self.node_history = [0]
     
+    def walk_to_node(self, node_index):
+        self.current_node_idx = node_index
+        self.node_history.append(self.current_node_idx)
+
+    def reset_to_node(self, node_index):
+        self.current_node_idx = node_index
+        self.node_history = [node_index]
+
     def walk_back(self):
         if len(self.node_history) == 1:
             print("Cannot go back any further")
@@ -39,16 +47,15 @@ class StoryPlayer:
 
             if len(current_node.next_transitions) == 0:
                 print("Ran out of nodes?")
-                if current_node.control_settings.autoplay:
-                    print("Autoplay is enabled, attempting to advance to next node")
-                    self.current_node_idx += 1
-                    self.node_history.append(self.current_node_idx)
+                print("Autoplay is {}, attempting to advance to next node".format(current_node.control_settings.autoplay))
+                self.current_node_idx += 1
+                self.node_history.append(self.current_node_idx)
+                continue
                 self.playing = False
                 continue
 
             elif len(current_node.next_transitions) == 1:
-                self.current_node_idx = current_node.next_transitions[0].to_index
-                self.node_history.append(self.current_node_idx)
+                self.walk_to_node(current_node.next_transitions[0].to_index)
 
             else:
                 print("Interactive node, please select a transition")
@@ -102,21 +109,32 @@ class StoryPlayer:
                         to_replay_assets = True
 
                     elif input_button == "ok":
-                        self.current_node_idx = seek_index
+                        if len(current_node.next_transitions) == 0:
+                            if current_node.control_settings.autoplay:
+                                self.walk_to_node(seek_index + 1)
+                                break
+                            self.playing = False
+                            break
+                        
+                        if len(current_node.next_transitions) == 1:
+                            self.walk_to_node(current_node.next_transitions[0].to_index)
+                            break
+                            
+                        self.walk_to_node(seek_index)
                         self.node_history.append(self.current_node_idx)
+                        self.audio_supressed = True
                         break
+                        
 
                     elif input_button == "home":
                         if len(current_node.home_transitions) == 0:
                             # No custom home transition available for this node
                             # We just go back to node #0
-                            current_node_idx = 0
-                            self.node_history = [0]
+                            self.reset_to_node(0)
                             break
                         else:
                             home_transition = current_node.home_transitions[0]
-                            current_node_idx = home_transition.to_index
-                            self.node_history.append(current_node_idx)
+                            self.walk_to_node(home_transition.to_index)
                             break
 
         print("Story ended.")
