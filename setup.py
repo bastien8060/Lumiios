@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lunii',
-    version='0.1.0a1',
+    version='0.1.0a2',
     description='A Python package for working with Lunii devices, and emulating them',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
