@@ -4,9 +4,11 @@ setup(
     name='lunii',
     version='0.1.0a1',
     description='A Python package for working with Lunii devices, and emulating them',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     author='Bastien Saidi',
     author_email='saidibastien@gmail.com',
-
+    url='https://github.com/bastien8060/lumiios',
     packages=['lunii'],
     package_data={'lunii': ['data/titles.json']},
     install_requires=[
