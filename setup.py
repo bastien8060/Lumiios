@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lunii',
-    version='0.1.0a2',
+    version='0.1.1a1',
     description='A Python package for working with Lunii devices, and emulating them',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -18,6 +18,7 @@ setup(
         'Pillow >= 7.2.0',
         'python-vlc >= 2.2.6100',
         'appdirs',
+        'requests',
     ],
     entry_points={
         'console_scripts': ['lunii-cli=lumiios.cli:main']
