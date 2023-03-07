@@ -2,12 +2,17 @@ import time
 from typing import List
 
 class StoryPlayer:
-    def __init__(self, story):
+    def __init__(self, story, interactive=True, display_cb=None, audio_cb=None):
         self.story = story
         self.current_node_idx = 0
         self.audio_supressed = False
         self.playing = True
         self.node_history = [0]
+
+        self.interactive = interactive
+        self.display_cb = display_cb
+        self.audio_cb = audio_cb
+        self.pending_input = None
     
     def walk_to_node(self, node_index):
         self.current_node_idx = node_index
@@ -24,6 +29,28 @@ class StoryPlayer:
         else:
             self.node_history.pop()
             self.current_node_idx = self.node_history[-1]
+
+    def display_bitmap(self, bitmap):
+        if self.interactive:
+            print("\033[H\033[J")
+            bitmap.show()
+        elif self.display_cb is not None:
+            self.display_cb(bitmap.content)
+        else:
+            print("No display callback defined! Skipping Image...")
+
+    def play_audio(self, audio):
+        if not self.interactive:
+            if self.audio_cb is not None:
+                self.audio_cb(audio.content, audio.path)
+            else:
+                print("No audio callback defined! Defaulting to vlc...")
+
+        audio.play()
+        while audio.is_playing:
+            time.sleep(0.1)
+        audio.release()
+
         
     def play(self):
         print("{} Playing...".format(self.story.title))
@@ -32,15 +59,11 @@ class StoryPlayer:
             current_node = self.story.stage_nodes[self.current_node_idx]
 
             if current_node.assets['image'] is not None:
-                print("\033[H\033[J")
-                current_node.assets['image'].show()
+                self.display_bitmap(current_node.assets['image'])
 
             if current_node.assets['audio'] is not None:
                 if not self.audio_supressed:
-                    current_node.assets['audio'].play()
-                    while current_node.assets['audio'].is_playing:
-                        time.sleep(0.1)
-                    current_node.assets['audio'].release()
+                    self.play_audio(current_node.assets['audio'])  
                 self.audio_supressed = False
             else:
                 break
@@ -82,14 +105,10 @@ class StoryPlayer:
 
                     if to_replay_assets:
                         if seek_node.assets['image'] is not None:
-                            print("\033[H\033[J")
-                            seek_node.assets['image'].show()
+                            self.display_bitmap(seek_node.assets['image'])
 
                         if seek_node.assets['audio'] is not None:
-                            seek_node.assets['audio'].play()
-                            while seek_node.assets['audio'].is_playing:
-                                time.sleep(0.1)
-                            seek_node.assets['audio'].release()
+                            self.play_audio(seek_node.assets['audio'])
                         to_replay_assets = False
 
                     input_button = self._simulate_input(wheel, ok, home)
@@ -139,8 +158,24 @@ class StoryPlayer:
 
         print("Story ended.")
 
+    def feed_input(self, button):
+        if button == "wheel":
+            self.pending_input = "+"
+        elif button == "ok":
+            self.pending_input = "ok"
+        elif button == "home":
+            self.pending_input = "home"
+        elif button == "wheel":
+            self.pending_input = "-"
+        else:
+            return False
+        return True
+
     def _simulate_input(self, wheel, ok, home):
-        user_input = input("Lunii> ").lower().strip()
+        if not self.interactive:
+            user_input = self.pending_input
+        else:
+            user_input = input("Lunii> ").lower().strip()
         if wheel and user_input == "+":
             return "+"
         elif ok and user_input == "ok":
@@ -150,5 +185,8 @@ class StoryPlayer:
         elif wheel and user_input == "-":
             return "-"
         else:
+            if not self.interactive:
+                # avoid a busy loop
+                time.sleep(0.2)
             print("Invalid input")
             return self._simulate_input(wheel, ok, home)
