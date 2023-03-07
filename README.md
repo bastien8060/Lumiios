@@ -2,10 +2,23 @@
 
 Lumiios is a Python program that allows you to manage and emulate the Lunii StoryTeller. With Lumiios, you can easily parse every story in your device and get details about each one.
 
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Device-level methods](#device-level-methods)
+  - [Story-level methods](#story-level-methods)
+  - [Playing stories](#playing-stories)
+- [Contributing](#contributing)
+
 ## Installation
 
+Lumiios is available under PyPi! You can install it by:
 ```bash
 pip install lunii
+```
+
+Or alternatively you can:
+```bash
+pip install git+https://github.com/bastien8060/Lumiios
 ```
 
 ## Usage
@@ -82,6 +95,23 @@ cover_audio.release()
 with open('cover_audio.mp3', 'wb') as f:
     f.write(cover_audio.content)
 ```
+
+### Playing stories
+
+Lumiios also allows you to play stories on your Lunii StoryTeller. This is done by creating a StoryPlayer instance with a Story instance. You can then play the story by calling the play() method.
+
+```python
+from lunii import StoryPlayer
+
+story_player = StoryPlayer(story)
+# this will block until the story is finished playing
+story_player.play()
+
+print("Player History: {}".format(story_player.node_history))
+```
+
+> Note: The StoryPlayer class is still in development and is not fully functional yet.
+> As of this release, the StoryPlayer is only interactive and does not support interacting with stories programmatically.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
