@@ -7,6 +7,15 @@ class StoryPlayer:
         self.current_node_idx = 0
         self.audio_supressed = False
         self.playing = True
+        self.node_history = [0]
+    
+    def walk_back(self):
+        if len(self.node_history) == 1:
+            print("Cannot go back any further")
+            return
+        else:
+            self.node_history.pop()
+            self.current_node_idx = self.node_history[-1]
         
     def play(self):
         print("{} Playing...".format(self.story.title))
@@ -33,11 +42,13 @@ class StoryPlayer:
                 if current_node.control_settings.autoplay:
                     print("Autoplay is enabled, attempting to advance to next node")
                     self.current_node_idx += 1
+                    self.node_history.append(self.current_node_idx)
                 self.playing = False
                 continue
 
             elif len(current_node.next_transitions) == 1:
                 self.current_node_idx = current_node.next_transitions[0].to_index
+                self.node_history.append(self.current_node_idx)
 
             else:
                 print("Interactive node, please select a transition")
@@ -92,10 +103,20 @@ class StoryPlayer:
 
                     elif input_button == "ok":
                         self.current_node_idx = seek_index
+                        self.node_history.append(self.current_node_idx)
                         break
 
                     elif input_button == "home":
-                        self.playing = False
+                        if len(current_node.home_transitions) == 0:
+                        # No custom home transition available for this node
+                        # We just go back to node #0
+                        current_node_idx = 0
+                        self.node_history = [0]
+                        break
+                    else:
+                        home_transition = current_node.home_transitions[0]
+                        current_node_idx = home_transition.to_index
+                        self.node_history.append(current_node_idx)
                         break
 
         print("Story ended.")
