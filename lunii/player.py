@@ -108,16 +108,16 @@ class StoryPlayer:
 
                     elif input_button == "home":
                         if len(current_node.home_transitions) == 0:
-                        # No custom home transition available for this node
-                        # We just go back to node #0
-                        current_node_idx = 0
-                        self.node_history = [0]
-                        break
-                    else:
-                        home_transition = current_node.home_transitions[0]
-                        current_node_idx = home_transition.to_index
-                        self.node_history.append(current_node_idx)
-                        break
+                            # No custom home transition available for this node
+                            # We just go back to node #0
+                            current_node_idx = 0
+                            self.node_history = [0]
+                            break
+                        else:
+                            home_transition = current_node.home_transitions[0]
+                            current_node_idx = home_transition.to_index
+                            self.node_history.append(current_node_idx)
+                            break
 
         print("Story ended.")
 
