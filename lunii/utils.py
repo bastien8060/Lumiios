@@ -253,19 +253,19 @@ class StoryMetadata:
             results.append(result)
 
         self.filename = self.filename or os.path.join(
-            AppDirs("Lumiios", "Lumiios").user_data_dir, "titles.json"
+            AppDirs("lunii", "lunii").user_data_dir, "titles.json"
         )
         with open(self.filename, 'w') as f:
             json.dump(results, f, indent=4)
 
     def load_titles(self):
         self.filename = self.filename or os.path.join(
-            AppDirs("Lumiios", "Lumiios").user_data_dir, "titles.json"
+            AppDirs("lunii", "lunii").user_data_dir, "titles.json"
         )
         if os.path.exists(self.filename):
             with open(self.filename, 'r') as f:
                 return json.load(f)
-        return json.load(resource_stream('lumiios', 'data/titles.json'))
+        return json.load(resource_stream('lunii', 'data/titles.json'))
 
     def get_metadata(self, uuid):
         for story in self.metadata:
