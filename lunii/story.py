@@ -31,7 +31,7 @@ class Story:
         self.nodes_index_list = []
         self.stage_nodes = {}
 
-        self.cover_sound = None
+        self.cover_audio = None
 
         self.populate()
 
@@ -45,11 +45,11 @@ class Story:
         self.__get_list_node_index()
         self.__get_action_node_index()
 
-        self.__get_cover_sound()
+        self.__get_cover_audio()
 
-    def __get_cover_sound(self):
+    def __get_cover_audio(self):
         # reference to AudioAsset of node #0
-        self.cover_sound = self.stage_nodes.get(0,{}).assets.get('audio', None)
+        self.cover_audio = self.stage_nodes.get(0,{}).assets.get('audio', None)
 
     def __get_story_metadata(self):
         with open(self.__ni_path, 'rb') as fp_ni:
