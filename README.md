@@ -109,9 +109,40 @@ story_player.play()
 
 print("Player History: {}".format(story_player.node_history))
 ```
+Or you can interact with the story programmatically by passing interactive=False and callbacks to the StoryPlayer constructor.
+
+```python
+
+def display_cb(image:ImageAsset):
+    with open('image.png', 'wb') as f:
+        f.write(image.content)
+    # or display the image in a terminal: image.show()
+
+def audio_cb(audio:AudioAsset):
+    with open('audio.mp3', 'wb') as f:
+        f.write(audio.content)
+    # or play the audio with vlc: audio.play()
+
+story_player = StoryPlayer(story, interactive=False, display_cb=display_cb, audio_cb=audio_cb)
+story_player.play() # blocks until the story is finished playing
+```
+
+you can run the play() method in a separate thread to allow the story to play in the background. These are the methods you can use to interact with the story:
+
+```python
+from lunii.utils import Buttons
+
+story_player.play() # starts playing the story
+story_player.walk_back() # goes back to the previous node
+reset_to_node(0) # resets the story to the node #0 so the start of the story
+story_player.playing # returns True if the story is playing and False if it has finished 
+
+buttons = [Buttons.PLUS, Buttons.MINUS, Buttons.HOME, buttons.OK]
+story_player.feed_input(buttons[0]) # feeds the story with the buttons pressed
+```
+
 
 > Note: The StoryPlayer class is still in development and is not fully functional yet.
-> As of this release, the StoryPlayer is only interactive and does not support interacting with stories programmatically.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

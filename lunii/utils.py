@@ -293,3 +293,9 @@ class StoryMetadata:
             if str(uuid).lower() in story['uuid'].lower():
                 return story
         return {}
+
+class Buttons:
+    PLUS = "+"
+    MINUS = "-"
+    HOME = "HOME"
+    OK = "OK"

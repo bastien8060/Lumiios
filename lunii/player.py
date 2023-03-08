@@ -1,6 +1,8 @@
 import time
 from typing import List
 
+from .utils import Buttons
+
 class StoryPlayer:
     def __init__(self, story, interactive=True, display_cb=None, audio_cb=None):
         self.story = story
@@ -55,6 +57,8 @@ class StoryPlayer:
     def play(self):
         print("{} Playing...".format(self.story.title))
         
+        self.playing = True
+
         while self.playing:
             current_node = self.story.stage_nodes[self.current_node_idx]
 
@@ -113,21 +117,21 @@ class StoryPlayer:
 
                     input_button = self._simulate_input(wheel, ok, home)
 
-                    if input_button == "+":
+                    if input_button == Buttons.PLUS:
                         seek_index += 1
                         if seek_index > max_seek_index:
                             seek_index = max_seek_index
 
                         to_replay_assets = True
 
-                    elif input_button == "-":
+                    elif input_button == Buttons.MINUS:
                         seek_index -= 1
                         if seek_index < min_seek_index:
                             seek_index = min_seek_index
 
                         to_replay_assets = True
 
-                    elif input_button == "ok":
+                    elif input_button == Buttons.OK:
                         if len(current_node.next_transitions) == 0:
                             if current_node.control_settings.autoplay:
                                 self.walk_to_node(seek_index + 1)
@@ -145,7 +149,7 @@ class StoryPlayer:
                         break
                         
 
-                    elif input_button == "home":
+                    elif input_button == Buttons.HOME:
                         if len(current_node.home_transitions) == 0:
                             # No custom home transition available for this node
                             # We just go back to node #0
@@ -159,31 +163,25 @@ class StoryPlayer:
         print("Story ended.")
 
     def feed_input(self, button):
-        if button == "wheel":
-            self.pending_input = "+"
-        elif button == "ok":
-            self.pending_input = "ok"
-        elif button == "home":
-            self.pending_input = "home"
-        elif button == "wheel":
-            self.pending_input = "-"
-        else:
+        buttons = [Buttons.PLUS, Buttons.OK, Buttons.HOME, Buttons.MINUS]
+        if button not in buttons:
             return False
-        return True
+        else:
+            self.pending_input = button
 
     def _simulate_input(self, wheel, ok, home):
         if not self.interactive:
             user_input = self.pending_input
         else:
             user_input = input("Lunii> ").lower().strip()
-        if wheel and user_input == "+":
-            return "+"
-        elif ok and user_input == "ok":
-            return "ok"
-        elif home and user_input == "home":
-            return "home"
-        elif wheel and user_input == "-":
-            return "-"
+        if wheel and user_input == Buttons.PLUS:
+            return Buttons.PLUS
+        elif ok and user_input == Buttons.OK:
+            return Buttons.OK
+        elif home and user_input == Buttons.HOME:
+            return Buttons.HOME
+        elif wheel and user_input == Buttons.MINUS:
+            return Buttons.MINUS
         else:
             if not self.interactive:
                 # avoid a busy loop
