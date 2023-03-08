@@ -43,12 +43,13 @@ class Device:
             self.raw_devkey = fp_md.read(0x100)
 
             # I'll rewrite that with utils.py:ByteBuffer
+            dec = Decryption(self.lunii_generic_key, bytes=self.raw_devkey).result.bytes
 
-            decryptionClient = Decryption(self.lunii_generic_key, bytes=self.raw_devkey)
-            dec = decryptionClient.decrypted
-
-            # Reordering Key components
-            self.device_key = dec[8:16] + dec[0:8]
+            if dec is not None:
+                # Reordering Key components
+                self.device_key = dec[8:16] + dec[0:8]
+            else:
+                raise Exception("Unable to decrypt device key")
 
     def __vectkey_to_bytes(self, key_vect):
         joined = [k.to_bytes(4, 'little') for k in key_vect]

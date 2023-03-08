@@ -14,6 +14,17 @@ from appdirs import AppDirs
 
 from pkg_resources import resource_stream
 
+class DecryptionResult:
+    def __init__(self, bytes):
+        if bytes is None:
+            self.status = False
+        else:
+            self.status = True
+
+        self.bytes = bytes
+        self.buffer = io.BytesIO(bytes)
+
+
 class Decryption:
     def __lunii_tea_rounds(self, buffer):
         return int(1 + 52 / (len(buffer)/4))
@@ -22,13 +33,15 @@ class Decryption:
         self.key = key
         self.padding = padding
         self.rounds = rounds
-        self.decrypted = None
-        self.decrypted_buffer = None
 
-        
+        self.result = DecryptionResult(None)
+
         #check if path or bytes is set
         if path is None:
-            self.decrypted = xxtea.decrypt(bytes, self.key, padding=False, rounds=self.__lunii_tea_rounds(bytes))
+            #decrypted = xxtea.decrypt(bytes, self.key, padding=False, rounds=self.__lunii_tea_rounds(bytes))
+            self.result = DecryptionResult(
+                xxtea.decrypt(bytes, self.key, padding=False, rounds=self.__lunii_tea_rounds(bytes))
+            )
             return
 
         else:
@@ -39,16 +52,16 @@ class Decryption:
             if len(ciphered) == 0:
                 return
             
-            self.decrypted = xxtea.decrypt(ciphered, self.key, padding=False, rounds=self.__lunii_tea_rounds(ciphered))
+            decrypted = xxtea.decrypt(ciphered, self.key, padding=False, rounds=self.__lunii_tea_rounds(ciphered))
 
             # check if left over bytes, that are already decrypted
             left = fp.read()
             if len(left) != 0:
-                self.decrypted += left
+                decrypted += left
 
             fp.close()
 
-            self.decrypted_buffer = io.BytesIO(self.decrypted)
+            self.result = DecryptionResult(decrypted)
 
             return
 
@@ -111,9 +124,11 @@ class ImageAsset:
         self.image_type = image_type
         self.path = path
 
-        self.content = Decryption(key, path=path).decrypted
+        self.content = Decryption(key, path=path).result.bytes
     
     def show(self):
+        if self.content is None:
+            return
         img = Image.open(io.BytesIO(self.content))
         img.save('/tmp/image.png')
 
@@ -163,6 +178,9 @@ class AudioAsset:
         # create a VLC instance
         self.instance = vlc.Instance('--no-xlib')
 
+        if self.instance is None:
+            raise Exception("VLC instance failed to initialize")
+
         # create a new media object
         self.media = self.instance.media_new(self.path)
 
@@ -178,9 +196,10 @@ class AudioAsset:
         self.player.play()
 
     def release(self):
-        #release the player
-        self.player.release()
-        self.instance.release()
+        if self.instance:
+            #release the player
+            self.player.release()
+            self.instance.release()
         
 
     def __repr__(self):
@@ -206,10 +225,10 @@ class ControlSettings:
 class StageNode:
     def __init__(self,
                  index: int,
-                 assets: Tuple[ImageAsset, AudioAsset] = None,
-                 next_transitions: List[Transition] = None,
-                 home_transitions: List[Transition] = None,
-                 control_settings: ControlSettings = None
+                 assets: dict[str,ImageAsset|AudioAsset|None] | None = None,
+                 next_transitions: List[Transition] | None = None,
+                 home_transitions: List[Transition] | None = None,
+                 control_settings: ControlSettings | None = None
                  ):
         self.index = index
         self.assets = assets
@@ -229,7 +248,9 @@ class StoryMetadata:
     def __init__(self, filename=None, refresh=False):
         self.filename = filename
         if refresh:
-            self.__fetch_metadata()
+            self.__fetch_metadata(
+                "https://raw.githubusercontent.com/o-daneel/Lunii.RE/main/resources/packs.json"
+            )
         self.metadata = self.load_titles()
 
     def __fetch_metadata(self, url: str, lang: str = "fr_FR") -> None:
